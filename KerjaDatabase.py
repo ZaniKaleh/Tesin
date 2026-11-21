@@ -294,17 +294,40 @@ def editbarang(Aidibarang, namabaru, hargabaru, minimalbaru):
 
 def restokbarang(Aidinya, nambah):
     datanya=spilstok("ADMIN")
+    cadang=cadangan()
     hasil="Blum"
+    urut=0
+
+    w=datetime.now()
+    Posisi=w.strftime("%Y-%m-%d")
+
     for _, detailygy in datanya.items():
         for Idikan, ditel in detailygy.items():
             if Idikan==Aidinya:
+                for isi in cadang:
+                    if Aidinya==isi['ID'] and urut<isi['Urut']:
+                        urut=isi['Urut']
+                urut+=1
+                modal=input("Masukkan modal dari barang ini (Per barang)\n")
+                while not modal.isdigit():
+                    modal=input("Hanya masukkan angka!")
+                modal=int(modal)
                 ditel['Stok']+=nambah
                 simpanstok(datanya)
+                cadang.append({
+                    'ID':Aidinya,
+                    'Urut':urut,
+                    'Tanggal':Posisi,
+                    'Ditambah':nambah,
+                    'Harga Modal':modal
+                })
+                simpancadang(cadang)
                 hasil="Udah"
                 break
         if hasil=="Udah":
             break
     return hasil
+
 def kurangibarang(Aidinya, dikurangi):
     datanya=spilstok("ADMIN")
     hasil="Blum"
@@ -388,7 +411,6 @@ def transaksi(jumlahbeli, aidibrg):
                     return ringkas
                 if lain2['Stok']>=jumlahbeli:
                     lain2['Stok']-=jumlahbeli
-                    hitungbersih(aidibrg, jumlahbeli)
                     simpanstok(ambil)
                     return hitungharga(jumlahbeli, lain2['Harga'])
                 else:
@@ -468,19 +490,19 @@ def nambahbarang():
     print("             Penambahan Barang Baru")
     print("================================================\n")
 
-    kat_dict = {}
+    Sukiaman = {}
     try:
         with Kategori.open("r",encoding='utf-8') as file_kat:
             for line in file_kat:
                 if line.strip():
                     p = line.strip().split('|')
-                    kat_dict[p[0]] = p[1]
+                    Sukiaman[p[0]] = p[1]
     except FileNotFoundError:
         print("File Kategori.txt tidak ditemukan!")
         return
 
     print("Kategori tersedia:")
-    for k in kat_dict:
+    for k in Sukiaman:
         print(f"- {k.title()}")
 
     print("- [Atau ketik 'BARU' untuk membuat kategori baru]")
@@ -489,13 +511,13 @@ def nambahbarang():
 
     if kat == "baru":
         kat = input("Masukkan nama kategori baru (contoh: minuman):\n").lower()
-        if kat in kat_dict:
+        if kat in Sukiaman:
             print("Kategori tersebut ternyata sudah terdaftar!")
-            inisial = kat_dict[kat]
+            inisial = Sukiaman[kat]
         else:
             while True:
                 inisial = input(f"Masukkan inisial untuk {kat.title()} (contoh: MNM):\n").upper()
-                if inisial in kat_dict.values():
+                if inisial in Sukiaman.values():
                     print("Inisial tersebut sudah digunakan! Gunakan inisial yang berbeda.")
                 elif len(inisial) == 0:
                     print("Inisial tidak boleh kosong!")
@@ -509,14 +531,14 @@ def nambahbarang():
             with Kategori.open("a",encoding='utf-8') as file_kat_append:
                 file_kat_append.write(f"\n{kat}|{inisial}\n")
 
-            kat_dict[kat] = inisial
+            Sukiaman[kat] = inisial
             print(f">> Kategori '{kat.title()}' berhasil disimpan!")
 
-    elif kat not in kat_dict:
+    elif kat not in Sukiaman:
         print("Kategori tidak valid/tidak terdaftar!")
         return
     else:
-        inisial = kat_dict[kat]
+        inisial = Sukiaman[kat]
 
     stok=spilstok("ADMIN")
 
@@ -534,13 +556,15 @@ def nambahbarang():
     print(f"\nID Otomatis dibuat: {eidi}")
 
     nam=input("Masukkan Nama Barangmu:\n")
-    try:
-        stk=int(input("Masukkan Stok awal:\n"))
-        hrg=int(input("Masukkan harga:\n"))
-        stkm=int(input("Masukkan stok minimum:\n"))
-    except ValueError:
-        print("Mohon masukkan angka!")
-        return
+    stk=input("Masukkan Stok awal:\n")
+    while not stk.isdigit():
+        stk=input("masukkan angka yang valid!:\n")
+    hrg=input("Masukkan harga:\n")
+    while not hrg.isdigit():
+        hrg=input("masukkan angka yang valid!:\n")
+    stkm=input("Masukkan stok minimum:\n")
+    while not stkm.isdigit():
+        stkm=input("Masukkan angka yang valid:\n")
 
     if kat not in stok:
         stok[kat]={}
@@ -701,3 +725,4 @@ def hitungbersih(idina, dibeli):
                             dibeli=0
                         total+=iniuntung
     simpancadang(cadang)
+    return total
