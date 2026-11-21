@@ -1,12 +1,13 @@
 from ast import While
 from copyreg import dispatch_table
+from Admin import punyaadmin
 import Main
 import sys
 
 import KerjaDatabase
 
 
-def Gudangnya(role):
+def Gudangnya(username, role):
         while True:
                 print("\n---------Selamat Datang di Bagian Gudang---------")
                 print("Tugas Apa yang Ingin Dijalankan?")
@@ -16,6 +17,8 @@ def Gudangnya(role):
                 print("4= Pulihkan atau Hapus barang")
                 print("999= Kembali ke Login")
                 print("0= Keluar Menu\n")
+                if role=="ADMIN":
+                    print("000= Kembali ke Menu Admin")
                 tugas=input()
                 match tugas:
                     case "1":
@@ -85,8 +88,14 @@ def Gudangnya(role):
                                         namabaru=input("Ubah nama barang menjadi apa? (0 untuk lewati)\n").strip()
                                         while "|" in namabaru:
                                             namabaru=input("Tidak boleh terdapat '|' pada nama barang!\n")
-                                        hargabaru=int(input("Ubah harga jual menjadi berapa? (0 untuk lewati)\n"))
-                                        minimbaru=int(input("Ubah stok minimum menjadi berapa? (0 untuk lewati)\n"))
+                                        hargabaru=input("Ubah harga jual menjadi berapa? (0 untuk lewati)\n")
+                                        while not hargabaru.isdigit():
+                                            hargabaru=input("Hanya masukkan angka yang valid!")
+                                        hargabaru=int(hargabaru)
+                                        minimbaru=input("Ubah stok minimum menjadi berapa? (0 untuk lewati)\n")
+                                        while not minimbaru.isdigit():
+                                            minimbaru=input("Hanya masukkan angka yang valid!")
+                                        minimbaru=int(minimbaru)
                                         validasistok=KerjaDatabase.editbarang(ubah, namabaru,hargabaru,minimbaru)
                                         if validasistok=="Berubah":
                                             print("Perubahan data berhasil!")
@@ -187,5 +196,10 @@ def Gudangnya(role):
                         Main.Login()
                     case "0":
                         sys.exit()
+                    case "000":
+                        if role=="ADMIN":
+                            punyaadmin(username,role)
+                        else:
+                            print("Input anda tidak valid!")
                     case _:
                         print("Input anda tidak valid!")
