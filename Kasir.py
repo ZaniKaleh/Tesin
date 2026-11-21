@@ -1,5 +1,6 @@
 from ast import While
 from pprint import PrettyPrinter
+from Admin import punyaadmin
 import Main
 import sys
 
@@ -20,6 +21,8 @@ def Kasirnya(role,username):
             print("2 = Jual Barang (Masukkan ID)")
             print("999= Kembali ke Login")
             print("0= Keluar")
+            if role=="ADMIN":
+                print("000= Kembali ke Menu Admin")
             opsi = input("Pilih Opsi:\n")
 
             if opsi == "1":
@@ -125,14 +128,11 @@ def Kasirnya(role,username):
                                                     for idb, detail in isi.items():
                                                         if idkeranjang==idb:
                                                             temu=True
-                                                            while True:
-                                                                try:
-                                                                    jumlahdikurangi=int(input("Berapa jumlah yang ingin dikurangi?\n"))
-                                                                except ValueError:
-                                                                    print("Masukkan angka!")
-                                                                    continue
-                                                                break
-                                                            if jumlahdikurangi<=detail['Jumlah dibeli']:
+                                                            jumlahdikurangi=input("Berapa jumlah yang ingin dikurangi?\n")
+                                                            while not jumlahdikurangi.isdigit():
+                                                                jumlahdikurangi=input("Masukkan angka yang valid!")
+                                                            jumlahdikurangi=int(jumlahdikurangi)
+                                                            if 0< jumlahdikurangi<=detail['Jumlah dibeli']:
                                                                 hasilkeranjang=KerjaDatabase.hapuskeranjang(jumlahdikurangi, idkeranjang)
                                                                 if hasilkeranjang==True:
                                                                     total-=detail['Harga Satuan']*jumlahdikurangi
@@ -165,6 +165,8 @@ def Kasirnya(role,username):
                 Main.Login()
             elif opsi=="0":
                 sys.exit()
+            elif opsi=="000" and role=="ADMIN":
+                punyaadmin(username,role)
             else:
                 print("Opsi tidak valid!")
             if len(keranjang) > 0:
