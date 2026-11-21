@@ -23,7 +23,7 @@ def Login():
         elif validasiuser=="YaKasir":
             Kasir.Kasirnya("KASIR", username)
         elif validasiuser=="YaGudang":
-            Gudang.Gudangnya("PENGELOLA GUDANG")
+            Gudang.Gudangnya(username, "PENGELOLA GUDANG")
         else:
             print("Username, Password, atau Role Anda tidak valid!")
             gagal+=1
