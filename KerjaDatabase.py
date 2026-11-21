@@ -681,11 +681,12 @@ def hitungbersih(idina, dibeli):
     asli=spilstok("ADMIN")
     urut=1
     total=0
-    slesai=False
     for _, ditel in asli.items():
         for idi in ditel:
             if idi==idina:
                 for isi in cadang:
+                    if isi['ID']==idina and urut<isi['Urut']:
+                        urut=isi['Urut']
                     if isi['ID']==idina and isi['Urut']==urut and dibeli>0:
                         urut+=1
                         smntr=isi['Ditambah']
@@ -695,8 +696,8 @@ def hitungbersih(idina, dibeli):
                             isi['Ditambah']=0
                             dibeli-=smntr
                         else:
-                            iniuntung=smntr*mdl
+                            iniuntung=dibeli*mdl
                             isi['Ditambah']=smntr-dibeli
                             dibeli=0
                         total+=iniuntung
-                        print("Aman")
+    simpancadang(cadang)
