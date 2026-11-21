@@ -408,7 +408,7 @@ def transaksi(jumlahbeli, aidibrg):
         for aidi, lain2 in lain1.items():
             if aidi==aidibrg:
                 if lain2['Kondisi']==0:
-                    return ringkas, 0 []
+                    return ringkas, 0,[]
                 if lain2['Stok']>=jumlahbeli:
                     modal, rincian=hitungbersih(aidibrg, jumlahbeli)
                     lain2['Stok']-=jumlahbeli
