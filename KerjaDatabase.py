@@ -408,11 +408,13 @@ def transaksi(jumlahbeli, aidibrg):
         for aidi, lain2 in lain1.items():
             if aidi==aidibrg:
                 if lain2['Kondisi']==0:
-                    return ringkas
+                    return ringkas, 0 []
                 if lain2['Stok']>=jumlahbeli:
+                    modal, rincian=hitungbersih(aidibrg, jumlahbeli)
                     lain2['Stok']-=jumlahbeli
                     simpanstok(ambil)
-                    return hitungharga(jumlahbeli, lain2['Harga'])
+                    akhir=hitungharga(jumlahbeli, lain2['Harga'])
+                    return
                 else:
                     print("Stok barang tidak cukup!")
                     return ringkas
@@ -620,12 +622,17 @@ def laporan(bulan):
 
 def hapuskeranjang(ygdihapus, IDdihapus):
     cek=spilstok("ADMIN")
+    itulah=cadangan()
     for _, iye in cek.items():
         for aidi, lain in iye.items():
             if aidi==IDdihapus:
-                lain['Stok']+=ygdihapus
-                simpanstok(cek)
-                return True
+                for isi in itulah:
+                    if isi['ID']==IDdihapus:
+                        isi['Ditambah']+=ygdihapus
+                        simpancadang(itulah)
+                        lain['Stok']+=ygdihapus
+                        simpanstok(cek)
+                        return True
     return False
 
 def diaktifkan():
@@ -704,6 +711,7 @@ def hitungbersih(idina, dibeli):
     cadang=cadangan()
     asli=spilstok("ADMIN")
     urut=1
+    hasil=[]
     total=0
     for _, ditel in asli.items():
         for idi in ditel:
@@ -716,13 +724,23 @@ def hitungbersih(idina, dibeli):
                         smntr=isi['Ditambah']
                         mdl=isi['Harga Modal']
                         if smntr<dibeli:
+                            dambil=smntr
                             iniuntung=smntr*mdl
                             isi['Ditambah']=0
                             dibeli-=smntr
                         else:
+                            dambil=dibeli
                             iniuntung=dibeli*mdl
                             isi['Ditambah']=smntr-dibeli
                             dibeli=0
+
+                        hasil.append({
+                            'ID':idina,
+                            'Urut':isi['Urut'],
+                            'Tanggal':isi['Tanggal'],
+                            'Ditambah':dambil,
+                            'Harga Modal':mdl
+                        })
                         total+=iniuntung
     simpancadang(cadang)
-    return total
+    return total, hasil
