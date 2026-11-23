@@ -402,7 +402,6 @@ def serch(Aidibarang, role):
 
 def transaksi(jumlahbeli, aidibrg):
     ambil=spilstok("ADMIN")
-    inidia=cadangan()
     ringkas=0
     for _, lain1 in ambil.items():
         for aidi, lain2 in lain1.items():
@@ -413,18 +412,18 @@ def transaksi(jumlahbeli, aidibrg):
                     modal, rincian=hitungbersih(aidibrg, jumlahbeli)
                     lain2['Stok']-=jumlahbeli
                     simpanstok(ambil)
-                    akhir=hitungharga(jumlahbeli, lain2['Harga'])
-                    return
+                    ringkas=hitungharga(jumlahbeli, lain2['Harga'])
+                    return ringkas, modal, rincian
                 else:
                     print("Stok barang tidak cukup!")
-                    return ringkas
-    return ringkas
+                    return ringkas, 0, []
+    return ringkas, 0, []
 
 def hitungharga(jumlah, hargabrg):
     ringkas=hargabrg*jumlah
     return ringkas
 
-def keranjangnya(idygy, keranjang, beli, akhir):
+def keranjangnya(idygy, keranjang, beli, akhir,rincian):
     z=spilstok("ADMIN")
     ditemukan = False
     for _, ntar in z.items():
@@ -436,6 +435,7 @@ def keranjangnya(idygy, keranjang, beli, akhir):
                     if idygy in item:
                         item[idygy]['Jumlah dibeli']+=beli
                         item[idygy]['Harga']+=akhir
+                        item[idygy]['Rincian'].extend(isina.copy() for isina in rincian)
                         dikeranjang=True
                         break
                 if not dikeranjang:
@@ -444,7 +444,8 @@ def keranjangnya(idygy, keranjang, beli, akhir):
                             'Nama Barang': sisay['Nama Barang'],
                             'Jumlah dibeli': beli,
                             'Harga Satuan': sisay['Harga'],
-                            'Harga': akhir
+                            'Harga': akhir,
+                            'Rincian':[isi.copy() for isi in rincian]
                         }
                     })
                 break
