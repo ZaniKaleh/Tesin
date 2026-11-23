@@ -1,12 +1,14 @@
-import KerjaDatabase
+import sys
+
 import Gudang
 import Kasir
+import KerjaDatabase
 import Main
-import sys
+
 
 def punyaadmin(username, role):
     while True:
-                print("---------Selamat Datang di Kontrol Admin---------")
+                print(\n"---------Selamat Datang di Kontrol Admin---------")
                 print("Tugas apa yang ingin dilakukan?")
                 print("1= Manajemen User (Lihat/Tambah/Hapus)")
                 print("2= Buat laporan Penjualan")
