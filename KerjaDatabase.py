@@ -1,4 +1,5 @@
 from ast import While
+import msvcrt
 from pathlib import Path
 from datetime import datetime
 import random
@@ -199,10 +200,9 @@ def simpanstok(dataterbaru):
                 kondisi = detail.get('Kondisi', 1)
                 file.write(f"{kat}|{aidi}|{detail['Nama Barang']}|{detail['Stok']}|{detail['Harga']}|{detail['Stok Minimum']}|{kondisi}\n")
 def simpancadang(Ini):
-    with Ditelstok.open('w',encoding='utf-8') as file:
+    with Ditelstok.open('w', encoding='utf-8') as file:
         for isi in Ini:
-            if isi['Ditambah']>0:
-                file.write(f"{isi['ID']}|{isi['Urut']}|{isi['Tanggal']}|{isi['Ditambah']}|{isi['Harga Modal']}\n")
+            file.write(f"{isi['ID']}|{isi['Urut']}|{isi['Tanggal']}|{isi['Ditambah']}|{isi['Harga Modal']}\n")
 def simpanlaporan(omtewe, bulan):
     with Laporannya.open('a',encoding='utf-8') as file:
         barang_strings = []
@@ -621,20 +621,6 @@ def laporan(bulan):
     else:
         print(f"Tidak ada data laporan penjualan untuk tanggal {bulan}.")
 
-def hapuskeranjang(ygdihapus, IDdihapus):
-    cek=spilstok("ADMIN")
-    itulah=cadangan()
-    for _, iye in cek.items():
-        for aidi, lain in iye.items():
-            if aidi==IDdihapus:
-                for isi in itulah:
-                    if isi['ID']==IDdihapus:
-                        isi['Ditambah']+=ygdihapus
-                        simpancadang(itulah)
-                        lain['Stok']+=ygdihapus
-                        simpanstok(cek)
-                        return True
-    return False
 
 def diaktifkan():
     print("\n== Pulihkan Barang ==")
@@ -720,7 +706,7 @@ def hitungbersih(idina, dibeli):
                 for isi in cadang:
                     if isi['ID']==idina and urut<isi['Urut']:
                         urut=isi['Urut']
-                    if isi['ID']==idina and isi['Urut']==urut and dibeli>0:
+                    if isi['ID']==idina and isi['Urut']==urut and dibeli>0 and isi['Ditambah']>0:
                         urut+=1
                         smntr=isi['Ditambah']
                         mdl=isi['Harga Modal']
@@ -745,3 +731,75 @@ def hitungbersih(idina, dibeli):
                         total+=iniuntung
     simpancadang(cadang)
     return total, hasil
+
+def hapuskeranjang(ygdihapus, IDdihapus, rincian):
+    cek = spilstok("ADMIN")
+    itulah = cadangan()
+    barang = None
+    for _, iye in cek.items():
+        if IDdihapus in iye:
+            barang = iye[IDdihapus]
+            break
+
+    if barang is None:
+        return False
+
+    tersedia = 0
+    for data in rincian:
+        if data['ID'] == IDdihapus:
+            tersedia += data['Ditambah']
+
+    if tersedia < ygdihapus:
+        return False
+
+    sisa = ygdihapus
+    for i in range(len(rincian)-1, -1, -1):
+        data = rincian[i]
+        if data['ID'] != IDdihapus or data['Ditambah'] <= 0:
+            continue
+        kembali = min(sisa, data['Ditambah'])
+        ditemukan = False
+        for isi in itulah:
+            if isi['ID'] == data['ID'] and isi['Urut'] == data['Urut']:
+                isi['Ditambah'] += kembali
+                ditemukan = True
+                break
+        if not ditemukan:
+            itulah.append({
+                'ID': data['ID'],
+                'Urut': data['Urut'],
+                'Tanggal': data['Tanggal'],
+                'Ditambah': kembali,
+                'Harga Modal': data['Harga Modal']
+            })
+        data['Ditambah'] -= kembali
+        sisa -= kembali
+        if data['Ditambah'] == 0:
+            rincian.pop(i)
+        if sisa == 0:
+            break
+    if sisa > 0:
+        return False
+    barang['Stok'] += ygdihapus
+    simpancadang(itulah)
+    simpanstok(cek)
+    return True
+
+def Pewe(prompt="Password : "):
+    print(prompt, end="", flush=True)
+    password = ""
+    while True:
+        karakter = msvcrt.getwch()
+        if karakter == "\r":
+            print()
+            break
+        elif karakter == "\b":
+            if len(password) > 0:
+                password = password[:-1]
+                print("\b \b", end="", flush=True)
+        elif karakter in ("\x00", "\xe0"):
+            msvcrt.getwch()
+        else:
+            password += karakter
+            print("*", end="", flush=True)
+    return password
