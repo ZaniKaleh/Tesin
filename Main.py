@@ -4,7 +4,7 @@ import Admin
 import Gudang
 import Kasir
 import KerjaDatabase
-import getpass
+
 
 def Login():
     gagal=0
@@ -15,8 +15,7 @@ def Login():
     while True:
         print("\nMasukkan Username Anda:\n")
         username=input()
-        print("\nMasukkan Password Anda:\n")
-        password = getpass.getpass()
+        password = KerjaDatabase.Pewe("\nMasukkan Password Anda\n")
         validasiuser=KerjaDatabase.login(username,password)
         if validasiuser =="YaAdmin" :
             Admin.punyaadmin(username, "ADMIN")
@@ -33,4 +32,4 @@ def Login():
                 print(f"Kesempatan login tersisa {batas-gagal} kali lagi!")
 
 if __name__ == "__main__":
-    haba=KerjaDatabase.hitungbersih("AKN001", 100)
+    Login()
