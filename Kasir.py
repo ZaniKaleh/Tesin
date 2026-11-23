@@ -92,12 +92,12 @@ def Kasirnya(role,username):
                             break
 
                         if beli > 0:
-                            akhir = KerjaDatabase.transaksi(beli, hasilbeli)
+                            akhir,modal,rincian=KerjaDatabase.transaksi(beli, hasilbeli)
 
                             if akhir == 0:
                                 print("Pembelian gagal! Stok kurang atau ID tidak valid.")
                             else:
-                                keranjang=KerjaDatabase.keranjangnya(idygy, keranjang, beli, akhir)
+                                keranjang=KerjaDatabase.keranjangnya(idygy, keranjang, beli, akhir,rincian)
                                 total += akhir
                                 print(f"\nBarang ditambahkan ke keranjang. Subtotal item ini: Rp {akhir:,.0f}".replace(",", "."))
                                 while True:
