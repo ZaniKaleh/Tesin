@@ -1,6 +1,5 @@
 from ast import While
 from copyreg import dispatch_table
-from Admin import punyaadmin
 import Main
 import sys
 
@@ -8,7 +7,8 @@ import KerjaDatabase
 
 
 def Gudangnya(username, role):
-        while True:
+    from Admin import punyaadmin
+    while True:
                 print("\n---------Selamat Datang di Bagian Gudang---------")
                 print("Tugas Apa yang Ingin Dijalankan?")
                 print("1= Data Barang")
