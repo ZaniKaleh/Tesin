@@ -68,7 +68,7 @@ def Kasirnya(role,username):
                         print("Barang tidak ditemukan!")
         elif opsi == "2":
             Belilagi=True
-            inilah=KerjaDatabase.spilstok(role)
+            inilah=KerjaDatabase.spilstok("KASIR")
             for kate, isine in inilah.items():
                 print(f"\n>> Kategori: {kate.upper()}")
                 print(f"{'ID BARANG':<10} | {'NAMA BARANG':<30} | {'STOK':>10} | {'HARGA':>16} | {'STOK MIN':>10} | {'STATUS':<10}")
@@ -192,7 +192,7 @@ def Kasirnya(role,username):
 
             KerjaDatabase.strok(username, keranjang, total, uang_pembeli, kembalian)
             while True:
-                pembeli=input("Apakah ada pembeli lagi? (Y/n)\n").upper().strip()
+                pembeli=input("Apakah ada pembeli lagi?\nY= Kembali ke menu Kasir\nn= Kembali ke menu Login\n\n").upper().strip()
                 match pembeli:
                     case "Y":
                         break
