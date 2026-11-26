@@ -3,6 +3,9 @@ import msvcrt
 from pathlib import Path
 from datetime import datetime
 import random
+import hashlib
+import hmac
+import secrets
 
 Basenya=Path(__file__).resolve().parent
 Stok=Basenya/"Stok.txt"
@@ -10,6 +13,29 @@ User=Basenya/"User.txt"
 Laporannya=Basenya/"Laporan.txt"
 Kategori=Basenya/"Kategori.txt"
 Ditelstok=Basenya/"Ditelstok.txt"
+Labanya=Basenya/"Laba.txt"
+
+def _hash_password(password):
+    salt = secrets.token_bytes(16)
+    hasil = hashlib.pbkdf2_hmac(
+        'sha256', password.encode('utf-8'), salt, 600000
+    )
+    return f"pbkdf2_sha256${salt.hex()}${hasil.hex()}"
+
+def _cek_password(password, tersimpan):
+    if tersimpan.startswith("pbkdf2_sha256$"):
+        try:
+            algoritma, salt, hash_asli = tersimpan.split('$', 2)
+            if algoritma != "pbkdf2_sha256":
+                return False, False
+            hasil = hashlib.pbkdf2_hmac(
+                'sha256', password.encode('utf-8'), bytes.fromhex(salt), 600000
+            ).hex()
+            return hmac.compare_digest(hasil, hash_asli), False
+        except (ValueError, TypeError):
+            return False, False
+
+    return hmac.compare_digest(password, tersimpan), True
 
 def spilstok(job):
     stok = {}
@@ -134,7 +160,7 @@ def tambahuser():
                 break
         if yangada==False:
             break
-    users[aidi] = {"Username": uname, "Role": role, "Password": pwd}
+    users[aidi] = {"Username": uname, "Role": role, "Password": _hash_password(pwd)}
 
     with User.open('w',encoding='utf-8') as file:
         for id_u, det in users.items():
@@ -176,7 +202,8 @@ def spillaporan():
                                     "Nama Barang": nama,
                                     "Jumlah dibeli": jml,
                                     "Harga Satuan": hrg_sat,
-                                    "Harga": hrg_tot
+                                    "Harga": hrg_tot,
+                                    "Modal": int(b_parts[5]) if len(b_parts) > 5 else 0
                                 }
                             })
 
@@ -208,7 +235,8 @@ def simpanlaporan(omtewe, bulan):
         barang_strings = []
         for item in omtewe['Barang yang dibeli']:
             for idb, detail in item.items():
-                b_str = f"{idb};{detail['Nama Barang']};{detail['Jumlah dibeli']};{detail['Harga Satuan']};{detail['Harga']}"
+                modal = sum(isi['Ditambah'] * isi['Harga Modal'] for isi in detail.get('Rincian', []))
+                b_str = f"{idb};{detail['Nama Barang']};{detail['Jumlah dibeli']};{detail['Harga Satuan']};{detail['Harga']};{modal}"
                 barang_strings.append(b_str)
         barang_gabungan = "#".join(barang_strings)
 
@@ -245,22 +273,39 @@ def urutygy(job, descending=False):
 
     return BucketSort(semua_barang, descending=descending)
 
-def login(usernamecek,passwordcek):
-    loginkan=spiluser("Pos")
-    kondisilogin=""
-    for _, detailuser in loginkan.items():
-        if detailuser['Username']==usernamecek and detailuser['Password']==passwordcek and detailuser['Kondisi']=="1":
-            if detailuser['Role'].upper()=="Admin".upper():
-                kondisilogin="YaAdmin"
+def login(usernamecek, passwordcek):
+    loginkan = spiluser("Uni")
+    kondisilogin = ""
+
+    for aidi, detailuser in loginkan.items():
+        cocok, password_lama = _cek_password(
+            passwordcek, detailuser['Password']
+        )
+
+        if detailuser['Username'] == usernamecek and cocok:
+            if detailuser['Kondisi'] == "0":
+                print("Akun ini sedang dinonaktifkan!")
                 break
-            elif detailuser['Role'].upper()=="Kasir".upper():
-                kondisilogin="YaKasir"
-                break
-            elif detailuser['Role'].upper()=="Pengelola Gudang".upper():
-                kondisilogin="YaGudang"
-                break
-        elif detailuser['Username']==usernamecek and detailuser['Password']==passwordcek and detailuser['Kondisi']=="0":
-            print("Akun ini sedang dinonaktifkan!")
+
+            if password_lama:
+                detailuser['Password'] = _hash_password(passwordcek)
+                loginkan[aidi]['Password'] = detailuser['Password']
+
+                with User.open('w', encoding='utf-8') as file:
+                    for id_u, det in loginkan.items():
+                        file.write(
+                            f"{id_u}|{det['Username']}|{det['Role']}|"
+                            f"{det['Password']}|{det['Kondisi']}\n"
+                        )
+
+            if detailuser['Role'].upper() == "ADMIN":
+                kondisilogin = "YaAdmin"
+            elif detailuser['Role'].upper() == "KASIR":
+                kondisilogin = "YaKasir"
+            elif detailuser['Role'].upper() == "PENGELOLA GUDANG":
+                kondisilogin = "YaGudang"
+            break
+
     return kondisilogin
 
 def editbarang(Aidibarang, namabaru, hargabaru, minimalbaru):
@@ -297,10 +342,8 @@ def restokbarang(Aidinya, nambah):
     cadang=cadangan()
     hasil="Blum"
     urut=0
-
     w=datetime.now()
     Posisi=w.strftime("%Y-%m-%d")
-
     for _, detailygy in datanya.items():
         for Idikan, ditel in detailygy.items():
             if Idikan==Aidinya:
@@ -621,6 +664,37 @@ def laporan(bulan):
     else:
         print(f"Tidak ada data laporan penjualan untuk tanggal {bulan}.")
 
+def simpanlaba(tanggal, laba_kotor, laba_bersih, barang):
+    with Labanya.open('a', encoding='utf-8') as file:
+        file.write(f"{tanggal} | {laba_kotor} | {laba_bersih} | {'#'.join(barang)}\n")
+
+def laba(tanggal):
+    laporan_data = spillaporan()
+    if tanggal not in laporan_data:
+        print(f"Tidak ada data penjualan untuk tanggal {tanggal}.")
+        return
+
+    total_harga = 0
+    total_modal = 0
+    barang = []
+    for transaksi in laporan_data[tanggal]:
+        total_harga += transaksi['Total Pembelian']
+        for item in transaksi['Barang yang dibeli']:
+            for idb, detail in item.items():
+                if idb not in barang:
+                    barang.append(idb)
+                total_modal += detail.get('Modal', 0)
+
+    laba_kotor = total_harga
+    laba_bersih = total_harga - total_modal
+    print(f"\n==== PERHITUNGAN LABA TANGGAL {tanggal} ====")
+    print(f"Total Modal       : Rp {total_modal:,.0f}".replace(",", "."))
+    print(f"Total Harga       : Rp {total_harga:,.0f}".replace(",", "."))
+    print(f"Laba Kotor        : Rp {laba_kotor:,.0f}".replace(",", "."))
+    print(f"Laba Bersih       : Rp {laba_bersih:,.0f}".replace(",", "."))
+    simpanlaba(tanggal, laba_kotor, laba_bersih, barang)
+    print("Hasil perhitungan berhasil disimpan ke Laba.txt.")
+
 
 def diaktifkan():
     print("\n== Pulihkan Barang ==")
@@ -732,6 +806,7 @@ def hitungbersih(idina, dibeli):
     simpancadang(cadang)
     return total, hasil
 
+
 def hapuskeranjang(ygdihapus, IDdihapus, rincian):
     cek = spilstok("ADMIN")
     itulah = cadangan()
@@ -740,28 +815,22 @@ def hapuskeranjang(ygdihapus, IDdihapus, rincian):
         if IDdihapus in iye:
             barang = iye[IDdihapus]
             break
-
-    if barang is None:
+    if barang is None or ygdihapus <= 0:
         return False
-
     tersedia = 0
     for data in rincian:
         if data['ID'] == IDdihapus:
             tersedia += data['Ditambah']
-
-    if tersedia < ygdihapus:
+    if ygdihapus > tersedia:
         return False
-
-    sisa = ygdihapus
-    for i in range(len(rincian)-1, -1, -1):
-        data = rincian[i]
+    jumlahbaru = tersedia - ygdihapus
+    for data in rincian:
         if data['ID'] != IDdihapus or data['Ditambah'] <= 0:
             continue
-        kembali = min(sisa, data['Ditambah'])
         ditemukan = False
         for isi in itulah:
             if isi['ID'] == data['ID'] and isi['Urut'] == data['Urut']:
-                isi['Ditambah'] += kembali
+                isi['Ditambah'] += data['Ditambah']
                 ditemukan = True
                 break
         if not ditemukan:
@@ -769,20 +838,52 @@ def hapuskeranjang(ygdihapus, IDdihapus, rincian):
                 'ID': data['ID'],
                 'Urut': data['Urut'],
                 'Tanggal': data['Tanggal'],
-                'Ditambah': kembali,
+                'Ditambah': data['Ditambah'],
                 'Harga Modal': data['Harga Modal']
             })
-        data['Ditambah'] -= kembali
-        sisa -= kembali
-        if data['Ditambah'] == 0:
-            rincian.pop(i)
-        if sisa == 0:
+    rincianbaru = [
+        data.copy() for data in rincian
+        if data['ID'] != IDdihapus
+    ]
+    batchbarang = sorted(
+        [isi for isi in itulah if isi['ID'] == IDdihapus],
+        key=lambda isi: isi['Urut']
+    )
+    sisa = jumlahbaru
+    for isi in batchbarang:
+        if sisa <= 0:
             break
+        if isi['Ditambah'] <= 0:
+            continue
+        diambil = min(sisa, isi['Ditambah'])
+        isi['Ditambah'] -= diambil
+        rincianbaru.append({
+            'ID': isi['ID'],
+            'Urut': isi['Urut'],
+            'Tanggal': isi['Tanggal'],
+            'Ditambah': diambil,
+            'Harga Modal': isi['Harga Modal']
+        })
+        sisa -= diambil
     if sisa > 0:
         return False
+    try:
+        Stoklam = Stok.read_text(encoding='utf-8')
+        Cadlam = Ditelstok.read_text(encoding='utf-8')
+    except OSError:
+        return False
     barang['Stok'] += ygdihapus
-    simpancadang(itulah)
-    simpanstok(cek)
+    try:
+        simpancadang(itulah)
+        simpanstok(cek)
+    except OSError:
+        try:
+            Stok.write_text(Stoklam, encoding='utf-8')
+            Ditelstok.write_text(Cadlam, encoding='utf-8')
+        except OSError:
+            print("Peringatan: Gagal memulihkan file stok!")
+        return False
+    rincian[:] = rincianbaru
     return True
 
 def Pewe(prompt="Password : "):
